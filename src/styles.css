@@ -1,17 +1,270 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Pushidea · sistema visual
+   Identidad original (oliva oscuro + ámbar, Fraunces/Outfit) conservada y
+   ampliada: diez matices por ámbito, capas de fondo en movimiento, elevación
+   real en tarjetas y un vocabulario único de microinteracciones.
+   ========================================================================== */
+
 @theme {
+  /* Superficies e identidad heredadas */
   --color-bg: #121410;
+  --color-deep: #0b0d09;
   --color-surface: #1c1f1a;
+  --color-panel: #212620;
   --color-raised: #262a22;
   --color-fg: #f4f1e8;
   --color-muted: #9a978c;
   --color-accent: #e08a4f;
   --color-ink: #1a120c;
   --color-line: #34382e;
+
+  /* Acentos vivos (estados y detalles, siempre con icono o texto al lado) */
+  --color-gold: #f2c14e;
+  --color-moss: #93c95f;
+  --color-jade: #4fc08a;
+  --color-azure: #6a9df0;
+  --color-lila: #a98bf0;
+  --color-exito: #93c95f;
+  --color-aviso: #f0a63a;
+  --color-peligro: #e2725b;
+
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
   --radius-card: 1.5rem;
+  --radius-burbuja: 999px;
+
+  --ease-suave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-entrada: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-resorte: cubic-bezier(0.34, 1.24, 0.5, 1);
+
+  --shadow-tarjeta: 0 1px 0 0 rgb(244 241 232 / 0.05) inset, 0 22px 44px -30px rgb(0 0 0 / 0.95);
+  --shadow-flotante: 0 1px 0 0 rgb(244 241 232 / 0.08) inset, 0 30px 60px -28px rgb(0 0 0 / 1);
+  --shadow-cta: 0 18px 40px -18px rgb(224 138 79 / 0.7);
+  --shadow-muelle: 0 14px 34px -20px rgb(0 0 0 / 0.9);
+
+  --animate-deriva: deriva 34s ease-in-out infinite alternate;
+  --animate-deriva-lenta: deriva 48s ease-in-out infinite alternate-reverse;
+  --animate-respirar: respirar 5.4s ease-in-out infinite;
+  --animate-barrido: barrido 1.15s var(--ease-suave) infinite;
+  --animate-destello: destello 1.5s ease-out infinite;
+  --animate-sacudida: sacudida 420ms ease-in-out 1;
+  --animate-brote: brote 420ms var(--ease-entrada) both;
+  --animate-chispa: chispa 620ms ease-out 1;
+  --animate-subida: subida 460ms var(--ease-entrada) both;
+  --animate-escaneo: escaneo 3.2s ease-in-out infinite;
+  --animate-girar: girar 1s linear infinite;
+  --animate-latido: latido 2.6s ease-in-out infinite;
+}
+
+@keyframes deriva {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -8%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-7%, 6%, 0) scale(0.96);
+  }
+}
+
+@keyframes respirar {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes barrido {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(230%);
+  }
+}
+
+@keyframes destello {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes sacudida {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-5px);
+  }
+  30% {
+    transform: translateX(4px);
+  }
+  45% {
+    transform: translateX(-3px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes brote {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes chispa {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 0), var(--dy, -26px)) scale(1);
+  }
+}
+
+@keyframes subida {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes escaneo {
+  0%,
+  100% {
+    transform: translateY(-42%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(42%);
+  }
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(147 201 95 / 0.5);
+  }
+  60% {
+    box-shadow: 0 0 0 9px rgb(147 201 95 / 0);
+  }
+}
+
+@keyframes flotar {
+  0% {
+    transform: translate3d(0, 12vh, 0) scale(0.7);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.85;
+  }
+  82% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(var(--deriva-x, 18px), -22vh, 0) scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes trazo {
+  from {
+    stroke-dashoffset: var(--largo, 240);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes panel-der {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes panel-izq {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes plegable-abrir {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--alto-plegable);
+    opacity: 1;
+  }
+}
+
+@keyframes plegable-cerrar {
+  from {
+    height: var(--alto-plegable);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
 }
 
 @layer base {
@@ -23,6 +276,8 @@
   html {
     background: var(--color-bg);
     color: var(--color-fg);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -30,60 +285,1018 @@
     min-height: 100dvh;
     font-family: var(--font-sans);
     background: var(--color-bg);
+    /* Ni resaltado azul al tocar ni recortes de texto en negrita display */
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Los controles táctiles responden sin esperar al doble toque del zoom */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  [role="option"],
+  [role="combobox"],
+  summary,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* Foco visible único y legible sobre cualquier superficie. Con `outline` a
+     propósito: ninguna sombra o relleno de componente puede taparlo. */
+  :focus-visible {
+    outline: 3px solid var(--color-gold);
+    outline-offset: 2px;
   }
 
   ::selection {
     background: color-mix(in srgb, var(--color-accent) 45%, transparent);
     color: var(--color-fg);
   }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
 }
 
-@utility press {
-  transition: scale 150ms ease-out, background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
-}
+@layer components {
+  /* ============================== Utilidades ============================== */
 
-.press:active:not(:disabled) {
-  scale: 0.96;
-}
+  /** Pulsación breve y tangible: se hunde un poco y acorta la sombra. */
+  .press {
+    transition:
+      transform 150ms var(--ease-suave),
+      scale 150ms var(--ease-suave),
+      background-color 200ms ease-out,
+      color 200ms ease-out,
+      border-color 200ms ease-out,
+      box-shadow 240ms var(--ease-suave),
+      opacity 200ms ease-out;
+  }
 
-@keyframes rise {
-  from {
+  .press:active:not(:disabled):not([data-estado="cargando"]) {
+    scale: 0.965;
+    transform: translateY(1px);
+  }
+
+  /** Entrada escalonada de bloques de contenido. */
+  /* `backwards` y no `both`: la entrada se ve, pero al terminar no queda
+     transform ni filter aplicados (evita capas de composición permanentes). */
+  .rise,
+  .sube {
+    animation: subida 460ms var(--ease-entrada) backwards;
+  }
+
+  .d1 {
+    animation-delay: 60ms;
+  }
+  .d2 {
+    animation-delay: 120ms;
+  }
+  .d3 {
+    animation-delay: 180ms;
+  }
+  .d4 {
+    animation-delay: 240ms;
+  }
+  .d5 {
+    animation-delay: 300ms;
+  }
+
+  .sweep {
+    animation: var(--animate-barrido);
+  }
+
+  /** Oculta la barra sin quitar la capacidad de desplazarse. */
+  .sin-barra {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .sin-barra::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* ============================ Fondo vivo ============================ */
+
+  .fondo-vivo {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1b2019 0%, transparent 60%),
+      linear-gradient(180deg, #14170f 0%, var(--color-bg) 45%, #0e100c 100%);
+  }
+
+  .fondo-mancha {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(72px);
+    opacity: 0.42;
+    will-change: transform;
+  }
+
+  .fondo-trama {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgb(244 241 232 / 0.09) 1px,
+      transparent 0
+    );
+    background-size: 26px 26px;
+    opacity: 0.5;
+    mask-image: radial-gradient(115% 70% at 50% 0%, #000 10%, transparent 72%);
+  }
+
+  .fondo-grano {
+    position: absolute;
+    inset: 0;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .fondo-chispa {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--color-gold) 0%, rgb(240 166 58 / 0) 70%);
+    animation: flotar var(--duracion, 16s) linear infinite;
+  }
+
+  .fondo-vineta {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 50% 40%, transparent 45%, rgb(0 0 0 / 0.55) 100%);
+  }
+
+  /* ============================ Superficies ============================ */
+
+  /**
+   * Tarjeta base: borde teñido con el matiz del ámbito (`--hue`), aura superior
+   * y sombra profunda. Sin `--hue` cae en la línea neutra heredada.
+   */
+  .tarjeta {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid color-mix(in oklab, var(--hue, var(--color-line)) 30%, var(--color-line));
+    border-radius: var(--radius-card);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--hue, transparent) 9%, transparent) 0%,
+        transparent 46%
+      ),
+      linear-gradient(158deg, #232821 0%, #1a1e17 58%, #171b14 100%);
+    box-shadow: var(--shadow-tarjeta);
+    transition:
+      transform 260ms var(--ease-suave),
+      box-shadow 260ms var(--ease-suave),
+      border-color 260ms ease-out;
+  }
+
+  .tarjeta::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
     opacity: 0;
-    transform: translateY(12px);
-    filter: blur(4px);
+    background:
+      radial-gradient(
+        90% 60% at 12% 0%,
+        color-mix(in oklab, var(--hue, var(--color-accent)) 40%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        70% 50% at 100% 100%,
+        color-mix(in oklab, var(--hue, var(--color-accent)) 22%, transparent),
+        transparent 70%
+      );
+    transition: opacity 320ms ease-out;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
+
+  .tarjeta::after {
+    /* Filete de luz arriba: da la sensación de relieve pulido */
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--hue, var(--color-fg)) 55%, transparent) 22%,
+      rgb(244 241 232 / 0.28) 50%,
+      color-mix(in oklab, var(--hue, var(--color-fg)) 55%, transparent) 78%,
+      transparent
+    );
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .tarjeta-suave {
+    border-color: var(--color-line);
+    background: linear-gradient(160deg, #1f241d 0%, #191d16 100%);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .tarjeta-elevable:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-flotante);
+      border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 52%, var(--color-line));
+    }
+
+    .tarjeta-elevable:hover::before {
+      opacity: 0.85;
+    }
+  }
+
+  .tarjeta-elevable:focus-within {
+    border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 55%, var(--color-line));
+  }
+
+  .tarjeta-elevable:active {
+    transform: translateY(-1px) scale(0.995);
+  }
+
+  /** Selección de tarjeta: doble señal (borde + marca lateral), no solo color. */
+  .tarjeta-marcada {
+    border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 68%, var(--color-line));
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--hue, var(--color-accent)) 45%, transparent),
+      var(--shadow-flotante);
+  }
+
+  .tarjeta-marcada::before {
+    opacity: 0.9;
+  }
+
+  /* ============================== Botones ============================== */
+
+  .boton {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 1.1rem;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    overflow: hidden;
+    user-select: none;
+    isolation: isolate;
+    transition:
+      transform 140ms var(--ease-suave),
+      box-shadow 240ms var(--ease-suave),
+      background-color 200ms ease-out,
+      border-color 200ms ease-out,
+      color 200ms ease-out,
+      filter 200ms ease-out;
+  }
+
+  .boton:active:not(:disabled):not([data-estado="cargando"]) {
+    transform: translateY(1px) scale(0.975);
+  }
+
+  .boton:disabled {
+    cursor: not-allowed;
+    filter: saturate(0.45);
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  .boton[data-estado="cargando"] {
+    cursor: progress;
+  }
+
+  .boton-grande {
+    min-height: 3.5rem;
+    padding-inline: 1.5rem;
+    border-radius: 1.25rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+
+  .boton-icónico {
+    min-width: 2.75rem;
+    padding-inline: 0;
+    border-radius: var(--radius-burbuja);
+  }
+
+  .boton-primario {
+    color: var(--color-ink);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 46%),
+      linear-gradient(102deg, #f0a25f 0%, var(--color-accent) 42%, #d9703c 100%);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.35) inset,
+      0 -8px 18px -12px rgb(122 45 12 / 0.9) inset,
+      var(--shadow-cta);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .boton-primario:hover:not(:disabled) {
+      filter: brightness(1.06);
+      box-shadow:
+        0 1px 0 0 rgb(255 255 255 / 0.4) inset,
+        0 22px 46px -18px rgb(224 138 79 / 0.85);
+      transform: translateY(-2px);
+    }
+  }
+
+  .boton-secundario {
+    color: var(--color-fg);
+    border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 32%, var(--color-line));
+    background: linear-gradient(180deg, #2a2f26 0%, #21261f 100%);
+    box-shadow:
+      0 1px 0 0 rgb(244 241 232 / 0.06) inset,
+      var(--shadow-muelle);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .boton-secundario:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 60%, var(--color-line));
+      background: linear-gradient(180deg, #313730 0%, #252b23 100%);
+      box-shadow:
+        0 1px 0 0 rgb(244 241 232 / 0.09) inset,
+        0 20px 40px -24px rgb(0 0 0 / 1),
+        0 0 22px -12px var(--hue, var(--color-accent));
+    }
+  }
+
+  .boton-fantasma {
+    color: var(--color-fg);
+    background: color-mix(in oklab, var(--color-raised) 60%, transparent);
+    border-color: transparent;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .boton-fantasma:hover:not(:disabled) {
+      background: var(--color-raised);
+      border-color: var(--color-line);
+      transform: translateY(-1px);
+    }
+  }
+
+  .boton-peligro {
+    color: #ffe9e2;
+    border-color: color-mix(in oklab, var(--color-peligro) 55%, transparent);
+    background: linear-gradient(180deg, #6c2f22 0%, #4f231a 100%);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .boton-peligro:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px -20px rgb(226 114 91 / 0.85);
+    }
+  }
+
+  /** Estados de resultado: éxito y error, siempre con icono además del color. */
+  .boton[data-estado="exito"] {
+    border-color: color-mix(in oklab, var(--color-exito) 60%, transparent);
+    background: linear-gradient(180deg, #33471f 0%, #26361a 100%);
+    color: #e9f6dc;
+  }
+
+  .boton[data-estado="error"] {
+    border-color: color-mix(in oklab, var(--color-peligro) 65%, transparent);
+    background: linear-gradient(180deg, #4d231b 0%, #3a1b15 100%);
+    color: #ffe6de;
+    animation: var(--animate-sacudida);
+  }
+
+  /** Barrido de luz al pasar el cursor (solo donde hay cursor). */
+  .boton::after,
+  .brillo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    transform: translateX(-130%);
+    background: linear-gradient(
+      104deg,
+      transparent 34%,
+      rgb(255 255 255 / 0.3) 50%,
+      transparent 66%
+    );
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .boton:hover:not(:disabled)::after,
+    .brillo:hover::after {
+      animation: barrido 780ms var(--ease-suave);
+    }
+  }
+
+  .boton > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ============================== Rieles ============================== */
+
+  /**
+   * Carril horizontal nativo: momentum del navegador, `scroll-snap` moderado y
+   * desvanecido en los bordes solo cuando de verdad hay contenido fuera.
+   */
+  .riel {
+    position: relative;
+    display: flex;
+    gap: 0.625rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1rem;
+    overscroll-behavior-x: contain;
+    /* Aire vertical: el scroll horizontal recorta, la elevación no debe notarse */
+    padding-block: 0.75rem;
+    margin-block: -0.5rem;
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 var(--desvanecer-izq, 0px),
+      #000 calc(100% - var(--desvanecer-der, 0px)),
+      transparent 100%
+    );
+  }
+
+  .riel > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  .riel-centrado {
+    scroll-snap-type: x mandatory;
+  }
+
+  .riel-centrado > * {
+    scroll-snap-align: center;
+  }
+
+  /* ========================= Pestañas y dock ========================= */
+
+  .dock {
+    background: color-mix(in oklab, var(--color-deep) 76%, transparent);
+    backdrop-filter: blur(18px) saturate(1.3);
+    border-top: 1px solid color-mix(in oklab, var(--color-line) 90%, transparent);
+    box-shadow: 0 -18px 40px -28px rgb(0 0 0 / 1);
+  }
+
+  .pildora-tab {
+    position: absolute;
+    top: 0.3rem;
+    bottom: 0.3rem;
+    left: 0;
+    border-radius: 1.1rem;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.18), transparent 55%),
+      linear-gradient(120deg, #f0a25f, var(--color-accent) 55%, #e07a45);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.3) inset,
+      0 12px 26px -14px rgb(224 138 79 / 0.95);
+    transition:
+      transform 340ms var(--ease-entrada),
+      width 340ms var(--ease-entrada);
+    will-change: transform, width;
+  }
+
+  .tab {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 3.5rem;
+    min-width: 4rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 1.1rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-muted);
+    transition:
+      color 220ms ease-out,
+      transform 220ms var(--ease-suave);
+  }
+
+  .tab:hover {
+    color: color-mix(in oklab, var(--color-fg) 78%, var(--color-muted));
+  }
+
+  .tab[aria-selected="true"] {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .tab .tab-icono {
+    transition: transform 320ms var(--ease-resorte);
+  }
+
+  .tab[aria-selected="true"] .tab-icono {
+    transform: translateY(-1px) scale(1.12);
+  }
+
+  .tab:active {
+    transform: scale(0.94);
+  }
+
+  /* ============================== Paneles ============================== */
+
+  .panel {
+    animation: panel-der 220ms var(--ease-suave) backwards;
+  }
+
+  .panel[data-direccion="-1"] {
+    animation-name: panel-izq;
+  }
+
+  .panel-arrastrable {
+    transition:
+      transform 240ms var(--ease-entrada),
+      opacity 240ms var(--ease-entrada);
+  }
+
+  .panel-arrastrando {
+    transition: none;
+  }
+
+  /* ============================== Chips ============================== */
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: var(--radius-burbuja);
+    border: 1px solid color-mix(in oklab, var(--hue, var(--color-line)) 26%, var(--color-line));
+    background: linear-gradient(180deg, #282d24 0%, #1f241d 100%);
+    color: var(--color-fg);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      transform 160ms var(--ease-suave),
+      background-color 220ms ease-out,
+      border-color 220ms ease-out,
+      color 220ms ease-out,
+      box-shadow 260ms var(--ease-suave);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .chip:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 60%, var(--color-line));
+      box-shadow: 0 14px 26px -18px rgb(0 0 0 / 1);
+    }
+  }
+
+  .chip:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
+    color: #1b1209;
+    border-color: transparent;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 52%),
+      linear-gradient(
+        120deg,
+        color-mix(in oklab, var(--hue, var(--color-accent)) 88%, white 12%),
+        var(--hue, var(--color-accent))
+      );
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.35) inset,
+      0 12px 26px -14px color-mix(in oklab, var(--hue, var(--color-accent)) 90%, transparent);
+    font-weight: 600;
+  }
+
+  /* ============================== Campos ============================== */
+
+  .campo {
+    width: 100%;
+    min-height: 3rem;
+    border-radius: 1.1rem;
+    border: 1px solid var(--color-line);
+    background: linear-gradient(180deg, #191d16 0%, #161a13 100%);
+    color: var(--color-fg);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    box-shadow: 0 1px 0 0 rgb(244 241 232 / 0.04) inset;
+    transition:
+      border-color 200ms ease-out,
+      box-shadow 240ms var(--ease-suave),
+      background-color 200ms ease-out;
+  }
+
+  .campo::placeholder {
+    color: color-mix(in oklab, var(--color-muted) 85%, transparent);
+  }
+
+  .campo:hover {
+    border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-line));
+  }
+
+  .campo:focus,
+  .campo:focus-visible,
+  .campo:focus-within {
+    outline: none;
+    border-color: color-mix(in oklab, var(--color-accent) 78%, var(--color-line));
+    box-shadow:
+      0 0 0 3px rgb(224 138 79 / 0.24),
+      0 0 26px -10px rgb(224 138 79 / 0.6);
+  }
+
+  .campo[aria-invalid="true"] {
+    border-color: color-mix(in oklab, var(--color-peligro) 70%, var(--color-line));
+    box-shadow: 0 0 0 3px rgb(226 114 91 / 0.2);
+  }
+
+  /* ============================ Combobox ============================ */
+
+  .lista-opciones {
+    max-height: min(20rem, 52vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 1.1rem;
+    border: 1px solid color-mix(in oklab, var(--color-accent) 26%, var(--color-line));
+    background: color-mix(in oklab, var(--color-deep) 92%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-flotante);
+    padding: 0.35rem;
+    animation: brote 180ms var(--ease-entrada) both;
+  }
+
+  .opcion {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.8rem;
+    border-left: 3px solid transparent;
+    text-align: left;
+    color: var(--color-fg);
+    cursor: pointer;
+    transition:
+      background-color 140ms ease-out,
+      border-color 140ms ease-out,
+      transform 140ms var(--ease-suave);
+  }
+
+  .opcion[data-activa="true"] {
+    background: color-mix(in oklab, var(--hue, var(--color-accent)) 20%, var(--color-raised));
+    border-left-color: var(--hue, var(--color-accent));
+  }
+
+  .opcion[aria-selected="true"] {
+    font-weight: 600;
+  }
+
+  .opcion:active {
+    transform: scale(0.985);
+  }
+
+  /* =========================== Interruptor =========================== */
+
+  .pista {
+    position: relative;
+    flex-shrink: 0;
+    height: 2rem;
+    width: 3.5rem;
+    border-radius: var(--radius-burbuja);
+    border: 1px solid var(--color-line);
+    background: linear-gradient(180deg, #1a1e17, #23281f);
+    transition:
+      background-color 240ms ease-out,
+      border-color 240ms ease-out,
+      box-shadow 300ms var(--ease-suave);
+  }
+
+  .pista[data-encendida="true"] {
+    border-color: color-mix(in oklab, var(--hue, var(--color-accent)) 65%, transparent);
+    background: linear-gradient(
+      120deg,
+      color-mix(in oklab, var(--hue, var(--color-accent)) 88%, white 12%),
+      var(--hue, var(--color-accent))
+    );
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.3) inset,
+      0 0 24px -8px color-mix(in oklab, var(--hue, var(--color-accent)) 90%, transparent);
+  }
+
+  .pomo {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.25rem;
+    height: 1.5rem;
+    width: 1.5rem;
+    border-radius: 50%;
+    background: var(--color-fg);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+    transition:
+      transform 280ms var(--ease-resorte),
+      background-color 240ms ease-out;
+  }
+
+  .pista[data-encendida="true"] .pomo {
+    transform: translateX(1.5rem);
+    background: var(--color-ink);
+  }
+
+  /* ========================== Control segmentado ========================== */
+
+  .segmento {
+    border: 1px solid var(--color-line);
+    border-radius: 1.15rem;
+    background: linear-gradient(180deg, #171b14 0%, #1d221a 100%);
+    padding: 0.25rem;
+    box-shadow: 0 1px 0 0 rgb(244 241 232 / 0.05) inset;
+  }
+
+  .pildora-segmento {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: 0.25rem;
+    border-radius: 0.9rem;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.2), transparent 55%),
+      linear-gradient(
+        120deg,
+        color-mix(in oklab, var(--hue, var(--color-accent)) 92%, white 8%),
+        var(--hue, var(--color-accent))
+      );
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.3) inset,
+      0 10px 22px -14px color-mix(in oklab, var(--hue, var(--color-accent)) 95%, transparent);
+    transition:
+      transform 320ms var(--ease-entrada),
+      width 320ms var(--ease-entrada);
+  }
+
+  .segmento-opcion {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    transition:
+      color 220ms ease-out,
+      transform 160ms var(--ease-suave);
+  }
+
+  .segmento-opcion[aria-checked="true"] {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .segmento-opcion:active {
+    transform: scale(0.96);
+  }
+
+  /* ============================ Plegables ============================ */
+
+  .plegable-contenido {
+    overflow: hidden;
+    /* Radix mide el alto real y lo expone como variable para la animación */
+    --alto-plegable: var(--radix-collapsible-content-height);
+  }
+
+  .plegable-contenido[data-state="open"] {
+    animation: plegable-abrir 260ms var(--ease-suave) both;
+  }
+
+  .plegable-contenido[data-state="closed"] {
+    animation: plegable-cerrar 200ms var(--ease-suave) both;
+  }
+
+  /* ============================ Detalles vivos ============================ */
+
+  .texto-luz {
+    background: linear-gradient(96deg, #fdf6e6 8%, var(--color-gold) 48%, var(--color-accent) 92%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subrayado-trazo {
+    stroke-dasharray: var(--largo, 240);
+    animation: trazo 900ms var(--ease-entrada) 160ms both;
+  }
+
+  .esqueleto {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.9rem;
+    background: linear-gradient(180deg, #232821, #1b1f18);
+  }
+
+  .esqueleto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-130%);
+    background: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgb(244 241 232 / 0.12) 50%,
+      transparent 70%
+    );
+    animation: barrido 1.4s ease-in-out infinite;
+  }
+
+  .punto-vivo {
+    position: relative;
+    border-radius: 50%;
+    background: var(--color-moss);
+    animation: var(--animate-latido);
+  }
+
+  .chispas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .chispa {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 6px;
+    width: 6px;
+    border-radius: 50%;
+    background: var(--color-gold);
+    animation: var(--animate-chispa);
+  }
+
+  .marco-qr {
+    position: relative;
+  }
+
+  .marco-qr::before,
+  .marco-qr::after {
+    content: "";
+    position: absolute;
+    height: 26px;
+    width: 26px;
+    border: 3px solid var(--color-accent);
+    opacity: 0.85;
+  }
+
+  .marco-qr::before {
+    top: -8px;
+    left: -8px;
+    border-right: 0;
+    border-bottom: 0;
+    border-top-left-radius: 14px;
+  }
+
+  .marco-qr::after {
+    bottom: -8px;
+    right: -8px;
+    border-left: 0;
+    border-top: 0;
+    border-bottom-right-radius: 14px;
+  }
+
+  .linea-escaneo {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: 50%;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+    box-shadow: 0 0 14px 2px rgb(242 193 78 / 0.6);
+    animation: var(--animate-escaneo);
+  }
+
+  /** Tarjeta que se desliza para revelar acciones: la capa de acciones va detrás. */
+  .deslizable {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+  }
+
+  .deslizable-frente {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    will-change: transform;
+    transition: transform 300ms var(--ease-entrada);
+  }
+
+  .deslizable-arrastrando .deslizable-frente {
+    transition: none;
+  }
+
+  .deslizable-acciones {
+    position: absolute;
+    inset: 0 0 0 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: linear-gradient(90deg, #2a1d18 0%, #3a241c 100%);
+  }
+
+  /** Aviso flotante de estado (aria-live), aparece y se desvanece solo. */
+  .aviso-flotante {
+    animation: brote 220ms var(--ease-entrada) both;
   }
 }
 
-.rise {
-  animation: rise 420ms cubic-bezier(0.2, 0, 0, 1) both;
-}
-
-.d1 { animation-delay: 70ms; }
-.d2 { animation-delay: 140ms; }
-.d3 { animation-delay: 210ms; }
-
-@keyframes sweep {
-  from { transform: translateX(-120%); }
-  to { transform: translateX(220%); }
-}
-
-.sweep {
-  animation: sweep 1.1s cubic-bezier(0.2, 0, 0, 1) infinite;
-}
+/* ========================= Movimiento reducido ========================= */
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .rise,
+  .sube,
   .sweep,
-  .press {
-    animation: none;
-    transition: none;
+  .panel,
+  .esqueleto::after,
+  .chispa,
+  .linea-escaneo,
+  .punto-vivo,
+  .subrayado-trazo {
+    animation: none !important;
     filter: none;
-    transform: none;
     opacity: 1;
+    transform: none;
+  }
+
+  .press:active:not(:disabled),
+  .boton:active:not(:disabled),
+  .chip:active,
+  .tab:active,
+  .opcion:active,
+  .tarjeta-elevable:hover,
+  .tarjeta-elevable:active {
+    transform: none;
+    scale: 1;
+  }
+
+  /* El estado sigue siendo evidente sin animación: color + icono + texto */
+  .pista[data-encendida="true"] .pomo {
+    transform: translateX(1.5rem);
+  }
+
+  .fondo-mancha {
+    animation: none !important;
+    opacity: 0.3;
   }
 }

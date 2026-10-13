@@ -1,160 +1,378 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Bookmark, Check, Copy, QrCode, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Bookmark,
+  Check,
+  Compass,
+  Eye,
+  Hand,
+  History,
+  Info,
+  QrCode,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  TriangleAlert,
+  Wand2,
+} from "lucide-react";
+import { IdeaTarjeta } from "@/components/idea-tarjeta";
 import { InstalarQr } from "@/components/instalar-qr";
+import { PanelAjustes } from "@/components/panel-ajustes";
+import { PanelGuardadas } from "@/components/panel-guardadas";
 import { PrivacidadContenido } from "@/components/privacidad-contenido";
-import { ConsejoDelDia, RecursosIdea } from "@/components/recursos-idea";
+import { ConsejoDelDia } from "@/components/recursos-idea";
+import { ProveedorAvisos } from "@/components/ui/avisos";
+import { useAviso } from "@/components/ui/use-aviso";
+import { Boton, type EstadoBoton } from "@/components/ui/boton";
+import { FondoVivo } from "@/components/ui/fondo-vivo";
+import { PanelDeslizable } from "@/components/ui/panel-deslizable";
+import { Pestanias, type Pestania } from "@/components/ui/pestanias";
+import { Riel } from "@/components/ui/riel";
 import { generateIdea } from "@/lib/ideas/generate";
 import { ideaText, isBanned, norm } from "@/lib/ideas/guard";
-import { pickLocal, type AreaFilter, type FocusFilter } from "@/lib/ideas/pick";
+import { pickLocal, quedanIdeas, type AreaFilter } from "@/lib/ideas/pick";
 import { usePushidea } from "@/lib/ideas/store";
-import { AREAS, AREA_LABEL, FOCUS_LABEL, type Idea } from "@/lib/ideas/types";
+import { CATALOG } from "@/lib/ideas/catalog";
+import { AREA_LABEL, type Idea } from "@/lib/ideas/types";
+import { cn, vars } from "@/lib/ui/cn";
+import { prefiereMovimientoReducido } from "@/lib/ui/gestos";
+import { temaDe } from "@/lib/ui/tema";
 
-type Tab = "generar" | "guardadas" | "instalar" | "privacidad" | "ajustes";
+export type Tab = "generar" | "guardadas" | "instalar" | "privacidad" | "ajustes";
 
-function Mark() {
-  return (
-    <span className="relative block h-4 w-11" aria-hidden="true">
-      <span className="absolute right-0 bottom-0 left-0 h-px bg-line" />
-      <span className="absolute bottom-0 left-1 size-3 rounded-full bg-accent" />
-    </span>
-  );
-}
+/** Orden real de las pestañas: manda sobre el swipe y sobre las flechas. */
+const ORDEN: Tab[] = ["generar", "guardadas", "instalar", "privacidad", "ajustes"];
 
-function Switch({
-  on,
-  label,
-  detail,
-  onToggle,
-}: {
-  on: boolean;
-  label: string;
-  detail: string;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={onToggle}
-      className="press flex w-full items-center gap-4 rounded-3xl border border-line bg-surface px-4 py-4 text-left"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block text-base font-medium text-fg">{label}</span>
-        <span className="mt-1 block text-sm leading-relaxed text-muted">{detail}</span>
-      </span>
-      <span
-        className={`relative h-8 w-14 shrink-0 rounded-full transition-colors duration-200 ${on ? "bg-accent" : "bg-raised"}`}
-      >
-        <span
-          className={`absolute top-1 size-6 rounded-full transition-transform duration-200 ${on ? "translate-x-7 bg-ink" : "translate-x-1 bg-fg"}`}
-        />
-      </span>
-    </button>
-  );
-}
-
-function IdeaBody({ idea, saved, onToggle }: { idea: Idea; saved: boolean; onToggle: () => void }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    const text = [
-      idea.title,
-      `${AREA_LABEL[idea.area]} · ${FOCUS_LABEL[idea.focus]}`,
-      `Para: ${idea.forWhom}`,
-      idea.problem,
-      idea.description,
-      ...idea.steps.map((step, index) => `${index + 1}. ${step}`),
-    ].join("\n\n");
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  return (
-    <article className="rise rounded-3xl border border-line bg-surface p-5">
-      <div className="rise flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-raised px-3 py-1 text-xs font-medium tracking-wide text-fg">
-          {AREA_LABEL[idea.area]}
-        </span>
-        <span className="rounded-full bg-raised px-3 py-1 text-xs font-medium tracking-wide text-muted">
-          {FOCUS_LABEL[idea.focus]}
-        </span>
-        <span className="text-xs text-muted">{idea.source === "ia" ? "Recién pensada" : "Archivo local"}</span>
-      </div>
-      <h2 className="rise d1 font-display mt-4 text-3xl leading-tight font-medium text-fg">{idea.title}</h2>
-      <p className="rise d1 mt-3 text-base leading-relaxed text-fg">{idea.forWhom}</p>
-      <p className="rise d2 mt-3 text-sm leading-relaxed text-muted">{idea.problem}</p>
-      <p className="rise d2 mt-4 text-base leading-relaxed text-fg">{idea.description}</p>
-      <ol className="rise d3 mt-5 space-y-3">
-        {idea.steps.map((step, index) => (
-          <li key={step} className="flex gap-3 text-sm leading-relaxed text-fg">
-            <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-raised text-xs text-accent">
-              {index + 1}
-            </span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
-      <RecursosIdea area={idea.area} />
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`press flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-medium ${
-            saved ? "bg-accent text-ink" : "border border-line bg-raised text-fg"
-          }`}
-        >
-          <Bookmark className="size-4" aria-hidden="true" />
-          {saved ? "Guardada" : "Guardar"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void copy()}
-          className="press flex h-12 items-center justify-center gap-2 rounded-2xl border border-line bg-raised text-sm font-medium text-fg"
-        >
-          {copied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
-          {copied ? "Copiada" : "Copiar"}
-        </button>
-      </div>
-    </article>
-  );
-}
+type Mensaje = { texto: string; tono: "neutro" | "exito" | "aviso" | "error" };
 
 export function PushideaApp() {
+  return (
+    <ProveedorAvisos>
+      <Pushidea />
+    </ProveedorAvisos>
+  );
+}
+
+function Pushidea() {
   const saved = usePushidea((state) => state.saved);
-  const recent = usePushidea((state) => state.recent);
-  const current = usePushidea((state) => state.current);
-  const settings = usePushidea((state) => state.settings);
-  const seenCount = usePushidea((state) => state.seenTitles.length);
-  const setSettings = usePushidea((state) => state.setSettings);
-  const toggleSave = usePushidea((state) => state.toggleSave);
-  const removeSaved = usePushidea((state) => state.removeSaved);
-  const resetSeen = usePushidea((state) => state.resetSeen);
+  const seenTitles = usePushidea((state) => state.seenTitles);
   const focusIdea = usePushidea((state) => state.focusIdea);
+
   const [tab, setTab] = useState<Tab>("generar");
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-  const [empty, setEmpty] = useState(false);
-  const [query, setQuery] = useState("");
-  const [savedArea, setSavedArea] = useState<AreaFilter>("cualquiera");
+  const [direccion, setDireccion] = useState<-1 | 1>(1);
+  // Viven aquí, no en el panel: cambiar de pestaña no debe borrar el filtro.
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroArea, setFiltroArea] = useState<AreaFilter>("cualquiera");
 
   useEffect(() => {
     void Promise.resolve(usePushidea.persist.rehydrate());
   }, []);
 
-  async function onGenerate() {
-    if (busy) return;
-    setBusy(true);
-    setNote(null);
-    setEmpty(false);
+  const irA = useCallback(
+    (destino: Tab, sentido?: -1 | 1) => {
+      const desde = ORDEN.indexOf(tab);
+      const hacia = ORDEN.indexOf(destino);
+      setDireccion(sentido ?? (hacia >= desde ? 1 : -1));
+      setTab(destino);
+      // Al cambiar de sección se vuelve arriba, sin sorpresas con el teclado.
+      if (typeof window !== "undefined" && window.scrollY > 4) {
+        window.scrollTo({ top: 0, behavior: prefiereMovimientoReducido() ? "auto" : "smooth" });
+      }
+    },
+    [tab],
+  );
+
+  const abrirIdea = useCallback(
+    (idea: Idea) => {
+      focusIdea(idea);
+      irA("generar");
+    },
+    [focusIdea, irA],
+  );
+
+  const panel = useRef<HTMLDivElement>(null);
+  const focoPendiente = useRef(false);
+
+  useEffect(() => {
+    if (!focoPendiente.current) return;
+    focoPendiente.current = false;
+    panel.current?.focus();
+  }, [tab]);
+
+  const onSwipe = useCallback(
+    (sentido: -1 | 1) => {
+      const indice = ORDEN.indexOf(tab);
+      // Deslizar a la izquierda (sentido -1) avanza a la sección siguiente; el
+      // panel nuevo entra por el lado contrario al dedo.
+      const siguiente = ORDEN[(indice - sentido + ORDEN.length) % ORDEN.length];
+      if (!siguiente) return;
+      focoPendiente.current = true;
+      irA(siguiente, sentido === -1 ? 1 : -1);
+    },
+    [tab, irA],
+  );
+
+  const guardadas = Object.keys(saved).length;
+  /** Cuántas de las 40 ideas del archivo local ya salieron en este teléfono. */
+  const exploradas = useMemo(() => {
+    const vistas = new Set(seenTitles.map(norm));
+    return CATALOG.filter((idea) => vistas.has(norm(idea.title))).length;
+  }, [seenTitles]);
+
+  const pestanias = useMemo<Pestania[]>(
+    () => [
+      {
+        id: "generar",
+        etiqueta: "Generar",
+        icono: <Sparkles className="size-5" aria-hidden="true" />,
+      },
+      {
+        id: "guardadas",
+        etiqueta: "Guardadas",
+        icono: <Bookmark className="size-5" aria-hidden="true" />,
+        aviso: guardadas,
+        etiquetaAviso: `${guardadas} ${guardadas === 1 ? "idea guardada" : "ideas guardadas"}`,
+      },
+      {
+        id: "instalar",
+        etiqueta: "Instalar",
+        icono: <QrCode className="size-5" aria-hidden="true" />,
+      },
+      {
+        id: "privacidad",
+        etiqueta: "Privacidad",
+        icono: <ShieldCheck className="size-5" aria-hidden="true" />,
+      },
+      {
+        id: "ajustes",
+        etiqueta: "Ajustes",
+        icono: <SlidersHorizontal className="size-5" aria-hidden="true" />,
+      },
+    ],
+    [guardadas],
+  );
+
+  return (
+    <div className="relative flex min-h-dvh flex-col">
+      <FondoVivo />
+
+      <a
+        href="#contenido"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+      >
+        Saltar al contenido
+      </a>
+
+      <div className="relative mx-auto flex w-full max-w-lg flex-1 flex-col px-5 pt-[max(1.25rem,env(safe-area-inset-top))] lg:max-w-6xl lg:px-8">
+        <Encabezado guardadas={guardadas} exploradas={exploradas} />
+
+        <nav
+          aria-label="Secciones de la app"
+          className="dock order-3 fixed inset-x-0 bottom-0 z-30 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:order-2 lg:static lg:mt-2 lg:rounded-3xl lg:border lg:border-line lg:px-3 lg:pb-2"
+        >
+          <div className="mx-auto w-full max-w-lg lg:max-w-3xl">
+            <Pestanias
+              pestanias={pestanias}
+              activa={tab}
+              etiqueta="Secciones de Pushidea"
+              onCambiar={(id, sentido) => irA(id as Tab, sentido)}
+            />
+          </div>
+        </nav>
+
+        <main
+          id="contenido"
+          className="order-2 flex-1 pt-5 pb-32 focus:outline-none lg:order-3 lg:pt-8 lg:pb-16"
+        >
+          <PanelDeslizable activo={tab} direccion={direccion} onSwipe={onSwipe}>
+            <div
+              ref={panel}
+              role="tabpanel"
+              id={`panel-${tab}`}
+              aria-labelledby={`pestania-${tab}`}
+              tabIndex={-1}
+              className="focus:outline-none"
+            >
+              {tab === "generar" ? <PanelGenerar onIrA={irA} /> : null}
+              {tab === "guardadas" ? (
+                <PanelGuardadas
+                  onAbrir={abrirIdea}
+                  query={busqueda}
+                  onQuery={setBusqueda}
+                  area={filtroArea}
+                  onArea={setFiltroArea}
+                />
+              ) : null}
+              {tab === "instalar" ? <InstalarQr /> : null}
+              {tab === "privacidad" ? <PrivacidadContenido /> : null}
+              {tab === "ajustes" ? <PanelAjustes onIrA={irA} /> : null}
+            </div>
+          </PanelDeslizable>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cabecera                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function Encabezado({ guardadas, exploradas }: { guardadas: number; exploradas: number }) {
+  return (
+    <header className="order-1 pb-1">
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-4">
+        <div className="min-w-0">
+          <span className="flex items-center gap-2.5">
+            <span className="relative flex size-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f0a25f] to-[#d9703c] shadow-cta">
+              <span
+                className="absolute inset-0 animate-respirar rounded-2xl bg-accent/40 blur-lg"
+                aria-hidden="true"
+              />
+              <Wand2 className="relative size-4.5 text-ink" aria-hidden="true" />
+            </span>
+            <span className="text-[0.6875rem] leading-none font-semibold tracking-[0.2em] text-muted uppercase">
+              Una idea por toque
+            </span>
+          </span>
+
+          <h1 className="font-display mt-3.5 text-[2.75rem] leading-[0.92] font-semibold tracking-tight lg:text-6xl">
+            <span className="texto-luz">Pushidea</span>
+          </h1>
+
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 240 12"
+            preserveAspectRatio="none"
+            className="mt-2 h-3 w-52 max-w-full overflow-visible text-accent/80"
+          >
+            <path
+              d="M3 8C46 2 74 11 120 6.5S200 2 237 7.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              className="subrayado-trazo"
+              style={vars({ "--largo": "260" })}
+            />
+          </svg>
+        </div>
+
+        <div className="flex gap-2.5 lg:flex-col lg:items-end">
+          <Medidor
+            icono={<Bookmark className="size-4" aria-hidden="true" />}
+            valor={guardadas}
+            etiqueta={guardadas === 1 ? "guardada" : "guardadas"}
+            hue="#93c95f"
+          />
+          <Medidor
+            icono={<Compass className="size-4" aria-hidden="true" />}
+            valor={exploradas}
+            etiqueta="ideas vistas"
+            max={CATALOG.length}
+            hue="#6a9df0"
+          />
+        </div>
+      </div>
+
+      <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
+        Ideas de aplicaciones para la vida diaria o para aligerar un proceso. Cada toque propone una
+        distinta, con para quién es, qué resuelve y cómo se usaría. Sin pagos, transferencias ni
+        bancos.
+      </p>
+    </header>
+  );
+}
+
+function Medidor({
+  icono,
+  valor,
+  etiqueta,
+  max,
+  hue,
+}: {
+  icono: ReactNode;
+  valor: number;
+  etiqueta: string;
+  max?: number;
+  hue: string;
+}) {
+  const porcentaje = max ? Math.min(100, Math.round((valor / max) * 100)) : 0;
+  return (
+    <div
+      className="tarjeta tarjeta-suave flex min-w-32 items-center gap-2.5 rounded-2xl px-3 py-2 lg:min-w-44"
+      style={vars({ "--hue": hue })}
+    >
+      <span aria-hidden="true" style={{ color: hue }}>
+        {icono}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-display text-lg leading-none text-fg">{valor}</span>
+          <span className="truncate text-[0.625rem] leading-none tracking-[0.12em] text-muted uppercase">
+            {etiqueta}
+          </span>
+        </span>
+        {max ? (
+          <span className="mt-1.5 block h-1 w-full overflow-hidden rounded-full bg-raised">
+            <span
+              className="block h-full rounded-full transition-[width] duration-700 ease-entrada"
+              style={{ width: `${porcentaje}%`, background: hue }}
+            />
+          </span>
+        ) : null}
+      </span>
+      {max ? <span className="sr-only">de {max} del archivo local</span> : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pestaña Generar                                                             */
+/* -------------------------------------------------------------------------- */
+
+function PanelGenerar({ onIrA }: { onIrA: (tab: Tab) => void }) {
+  const anunciar = useAviso();
+  const current = usePushidea((state) => state.current);
+  const recent = usePushidea((state) => state.recent);
+  const saved = usePushidea((state) => state.saved);
+  const settings = usePushidea((state) => state.settings);
+  const seenTitles = usePushidea((state) => state.seenTitles);
+  const toggleSave = usePushidea((state) => state.toggleSave);
+  const focusIdea = usePushidea((state) => state.focusIdea);
+
+  const [ocupado, setOcupado] = useState(false);
+  const [estadoCta, setEstadoCta] = useState<EstadoBoton>("inactivo");
+  const [mensaje, setMensaje] = useState<Mensaje | null>(null);
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const pendiente = temporizador;
+    return () => {
+      if (pendiente.current) clearTimeout(pendiente.current);
+    };
+  }, []);
+
+  const agotado = useMemo(
+    () =>
+      !quedanIdeas({
+        area: settings.area,
+        focus: settings.focus,
+        blocked: [...seenTitles, ...Object.values(saved).map((idea) => norm(idea.title))],
+      }),
+    [settings.area, settings.focus, seenTitles, saved],
+  );
+
+  async function generar() {
+    if (ocupado) return;
+    setOcupado(true);
+    setEstadoCta("cargando");
+    setMensaje(null);
+
     const state = usePushidea.getState();
     const blocked = state.blockedTitles();
-    let placed = false;
+    let nueva: Idea | null = null;
+    let aviso: Mensaje | null = null;
+
     try {
       let liveReason: "sin-ia" | "vacia" | null = null;
       if (state.settings.useAi) {
@@ -165,331 +383,314 @@ export function PushideaApp() {
             avoidTitles: blocked.slice(0, 24),
           },
         });
-        if (result.ok && !isBanned(ideaText(result.idea)) && !blocked.map(norm).includes(norm(result.idea.title))) {
+        if (
+          result.ok &&
+          !isBanned(ideaText(result.idea)) &&
+          !blocked.map(norm).includes(norm(result.idea.title))
+        ) {
           state.commit(result.idea);
-          placed = true;
+          nueva = result.idea;
         } else if (!result.ok) {
           liveReason = result.reason;
         } else {
           liveReason = "vacia";
         }
       }
-      if (!placed) {
+      if (!nueva) {
         const local = pickLocal({
           area: state.settings.area,
           focus: state.settings.focus,
           blocked,
         });
-        if (!local) {
-          setEmpty(true);
-        } else {
+        if (local) {
           state.commit(local);
+          nueva = local;
           if (liveReason === "vacia") {
-            setNote("La idea en vivo no cumplía las reglas. Esta es del archivo de tu teléfono.");
+            aviso = {
+              tono: "aviso",
+              texto: "La idea en vivo no cumplía las reglas. Esta es del archivo de tu teléfono.",
+            };
           } else if (liveReason === "sin-ia") {
-            setNote("La idea en vivo no respondió a tiempo. Esta es del archivo de tu teléfono.");
+            aviso = {
+              tono: "aviso",
+              texto: "La idea en vivo no respondió a tiempo. Esta es del archivo de tu teléfono.",
+            };
           }
         }
       }
     } catch {
-      const local = pickLocal({
-        area: state.settings.area,
-        focus: state.settings.focus,
-        blocked,
-      });
-      if (!local) setEmpty(true);
-      else {
+      const local = pickLocal({ area: state.settings.area, focus: state.settings.focus, blocked });
+      if (local) {
         state.commit(local);
-        setNote("Sin conexión con la idea en vivo. Esta queda guardada solo en tu teléfono si la marcas.");
+        nueva = local;
+        aviso = {
+          tono: "aviso",
+          texto:
+            "Sin conexión con la idea en vivo. Esta queda guardada solo en tu teléfono si la marcas.",
+        };
       }
     } finally {
-      setBusy(false);
+      setOcupado(false);
     }
+
+    if (nueva && !aviso) {
+      aviso = { tono: "exito", texto: `Idea nueva: «${nueva.title}» · ${AREA_LABEL[nueva.area]}` };
+    }
+    if (!nueva && !aviso) {
+      aviso = {
+        tono: "error",
+        texto:
+          "Ya no quedan ideas nuevas con este filtro. Cambia el ámbito o vacía el historial de vistas.",
+      };
+    }
+    setMensaje(aviso);
+    setEstadoCta(nueva ? "exito" : "error");
+    temporizador.current = setTimeout(() => setEstadoCta("inactivo"), nueva ? 1700 : 2600);
   }
 
-  const savedList = Object.values(saved)
-    .filter((idea) => savedArea === "cualquiera" || idea.area === savedArea)
-    .filter((idea) => {
-      const haystack = norm(`${idea.title} ${idea.description} ${idea.problem} ${idea.forWhom}`);
-      return haystack.includes(norm(query));
-    })
-    .sort((a, b) => a.title.localeCompare(b.title, "es"));
+  const recientes = recent.filter((idea) => idea.id !== current?.id);
+  const tema = temaDe(settings.area);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <header className="flex items-end justify-between gap-4 pb-6">
-        <div>
-          <Mark />
-          <p className="font-display mt-3 text-3xl leading-none text-fg">Pushidea</p>
-          <p className="mt-2 text-sm text-muted">Ideas de uso diario. Sin pagos ni bancos.</p>
-        </div>
-        <p className="pb-1 text-right text-xs leading-relaxed text-muted">
-          {Object.keys(saved).length} guardadas
-          <br />
-          {seenCount} distintas
-        </p>
-      </header>
-
-      <main className="flex-1 pb-28">
-        {tab === "generar" ? (
-          <section>
-            <button
-              type="button"
-              onClick={() => void onGenerate()}
-              disabled={busy}
-              aria-busy={busy}
-              className="press relative h-16 w-full overflow-hidden rounded-2xl bg-accent text-base font-medium text-ink disabled:opacity-80"
-            >
-              {busy ? "Buscando una idea distinta…" : "Dame una idea"}
-              {busy ? <span className="sweep absolute inset-y-0 left-0 w-1/3 bg-fg/20" /> : null}
-            </button>
-            {note ? <p className="mt-3 text-sm leading-relaxed text-muted">{note}</p> : null}
-            {empty ? (
-              <div className="mt-6 rounded-3xl border border-line bg-surface p-5">
-                <h2 className="font-display text-2xl text-fg">Ya no quedan ideas nuevas con este filtro</h2>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Cambia el ámbito en Ajustes o vacía el historial de vistas. Lo que guardaste no se borra.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setTab("ajustes")}
-                  className="press mt-4 h-12 rounded-2xl bg-raised px-4 text-sm font-medium text-fg"
-                >
-                  Abrir ajustes
-                </button>
-              </div>
-            ) : null}
-            {current ? (
-              <div className="mt-6">
-                <IdeaBody
-                  key={current.id}
-                  idea={current}
-                  saved={Boolean(saved[current.id])}
-                  onToggle={() => toggleSave(current)}
-                />
-              </div>
-            ) : !empty ? (
-              <div className="mt-6 rounded-3xl border border-dashed border-line p-5">
-                <p className="font-display text-2xl leading-tight text-fg">Una idea cada vez que pulses.</p>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Cada propuesta explica para quién es, qué problema cotidiano resuelve y cómo se usaría. Si te
-                  gusta, se queda en este teléfono el tiempo que quieras.
-                </p>
-              </div>
-            ) : null}
-            {recent.length > 1 ? (
-              <div className="mt-8">
-                <p className="text-xs tracking-wide text-muted uppercase">Recientes en este teléfono</p>
-                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                  {recent
-                    .filter((idea) => idea.id !== current?.id)
-                    .map((idea) => (
-                      <button
-                        key={idea.id}
-                        type="button"
-                        onClick={() => focusIdea(idea)}
-                        className="press shrink-0 rounded-2xl border border-line bg-surface px-4 py-3 text-left"
-                      >
-                        <span className="block max-w-40 truncate text-sm text-fg">{idea.title}</span>
-                        <span className="mt-1 block text-xs text-muted">{AREA_LABEL[idea.area]}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        {tab === "guardadas" ? (
-          <section>
-            <label className="block text-sm text-muted" htmlFor="buscar">
-              Buscar
-            </label>
-            <input
-              id="buscar"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Título o problema"
-              className="mt-2 h-12 w-full rounded-2xl border border-line bg-surface px-4 text-fg outline-none placeholder:text-muted focus:border-accent"
-            />
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              <FilterChip active={savedArea === "cualquiera"} onClick={() => setSavedArea("cualquiera")} label="Todas" />
-              {AREAS.map((area) => (
-                <FilterChip
-                  key={area.id}
-                  active={savedArea === area.id}
-                  onClick={() => setSavedArea(area.id)}
-                  label={area.label}
-                />
-              ))}
-            </div>
-            {savedList.length === 0 ? (
-              <p className="mt-8 text-sm leading-relaxed text-muted">
-                {Object.keys(saved).length === 0
-                  ? "Todavía no guardas ninguna. Cuando una idea te sirva, márcala y se queda aquí."
-                  : "Nada coincide con esa búsqueda."}
-              </p>
-            ) : (
-              <ul className="mt-5 space-y-3">
-                {savedList.map((idea) => (
-                  <li key={idea.id} className="rounded-3xl border border-line bg-surface p-4">
-                    <button type="button" onClick={() => { focusIdea(idea); setTab("generar"); }} className="w-full text-left">
-                      <p className="text-xs text-muted">{AREA_LABEL[idea.area]}</p>
-                      <p className="font-display mt-1 text-2xl text-fg">{idea.title}</p>
-                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted">{idea.description}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeSaved(idea.id)}
-                      className="press mt-4 h-11 rounded-2xl border border-line px-4 text-sm text-fg"
-                    >
-                      Quitar de guardadas
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
-
-        {tab === "generar" ? <ConsejoDelDia /> : null}
-
-        {tab === "instalar" ? <InstalarQr /> : null}
-
-        {tab === "privacidad" ? <PrivacidadContenido /> : null}
-
-        {tab === "ajustes" ? (
-          <Settings
-            useAi={settings.useAi}
-            area={settings.area}
-            focus={settings.focus}
-            onAi={() => setSettings({ useAi: !settings.useAi })}
-            onArea={(area) => setSettings({ area })}
-            onFocus={(focus) => setSettings({ focus })}
-            onReset={() => {
-              resetSeen();
-              setEmpty(false);
-              setNote(null);
-            }}
+    <section className="lg:grid lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-8">
+      <div className="lg:sticky lg:top-6">
+        <div className="relative">
+          <span
+            aria-hidden="true"
+            className="absolute -inset-2 animate-respirar rounded-[1.75rem] bg-accent/22 blur-2xl"
           />
-        ) : null}
-      </main>
-
-      <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-bg/95 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-lg grid-cols-5 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <TabButton active={tab === "generar"} onClick={() => setTab("generar")} label="Generar" icon={<Sparkles className="size-5" />} />
-          <TabButton active={tab === "guardadas"} onClick={() => setTab("guardadas")} label="Guardadas" icon={<Bookmark className="size-5" />} />
-          <TabButton active={tab === "instalar"} onClick={() => setTab("instalar")} label="Instalar" icon={<QrCode className="size-5" />} />
-          <TabButton active={tab === "privacidad"} onClick={() => setTab("privacidad")} label="Privacidad" icon={<ShieldCheck className="size-5" />} />
-          <TabButton active={tab === "ajustes"} onClick={() => setTab("ajustes")} label="Ajustes" icon={<SlidersHorizontal className="size-5" />} />
+          <Boton
+            variante="primario"
+            tamano="grande"
+            estado={estadoCta}
+            onClick={() => void generar()}
+            aria-describedby="ayuda-cta"
+            className="relative w-full"
+            etiquetaCargando="Buscando una idea distinta…"
+            icono={<Sparkles className="size-5" aria-hidden="true" />}
+          >
+            {estadoCta === "exito"
+              ? "Idea lista"
+              : estadoCta === "error"
+                ? "Sin ideas nuevas"
+                : "Dame una idea"}
+          </Boton>
         </div>
-      </nav>
+
+        <p id="ayuda-cta" className="mt-3 text-xs leading-relaxed text-muted">
+          Un toque = una idea distinta. Se guarda en este teléfono solo si la marcas.
+        </p>
+
+        <EstadoVivo mensaje={mensaje} />
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <PildoraInfo
+            glifo={tema.emoji}
+            texto={`Ámbito: ${settings.area === "cualquiera" ? "cualquiera" : AREA_LABEL[settings.area]}`}
+          />
+          <PildoraInfo
+            texto={`Enfoque: ${settings.focus === "ambos" ? "ambos" : settings.focus === "procesos" ? "procesos" : "uso diario"}`}
+          />
+          <PildoraInfo
+            glifo={settings.useAi ? "🛰️" : "📴"}
+            texto={settings.useAi ? "Ideas en vivo" : "Solo archivo local"}
+          />
+          <Boton
+            variante="fantasma"
+            onClick={() => onIrA("ajustes")}
+            className="min-h-11 border border-line px-3.5 text-xs"
+            icono={<SlidersHorizontal className="size-3.5" aria-hidden="true" />}
+          >
+            Cambiar
+          </Boton>
+        </div>
+
+        {agotado ? (
+          <div className="tarjeta rise mt-5 p-5" style={vars({ "--hue": "#e2725b" })}>
+            <h2 className="font-display text-2xl leading-tight text-fg">
+              {settings.useAi
+                ? "El archivo local ya se agotó con este filtro"
+                : "Ya no quedan ideas nuevas con este filtro"}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              {settings.useAi
+                ? "Las ideas en vivo pueden seguir proponiendo cosas nuevas. Si prefieres el archivo de este teléfono, cambia el ámbito o vacía el historial de vistas: lo que guardaste no se borra."
+                : "Cambia el ámbito en Ajustes o vacía el historial de vistas. Lo que guardaste no se borra."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Boton
+                variante="primario"
+                onClick={() => onIrA("ajustes")}
+                icono={<SlidersHorizontal className="size-4" />}
+              >
+                Abrir ajustes
+              </Boton>
+              <Boton
+                variante="secundario"
+                onClick={() => onIrA("guardadas")}
+                icono={<Bookmark className="size-4" />}
+              >
+                Ver guardadas
+              </Boton>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-5">
+          <ConsejoDelDia />
+        </div>
+      </div>
+
+      <div className="mt-6 lg:mt-0">
+        {current ? (
+          <IdeaTarjeta
+            key={current.id}
+            idea={current}
+            saved={Boolean(saved[current.id])}
+            onToggle={() => toggleSave(current)}
+          />
+        ) : (
+          <Bienvenida />
+        )}
+      </div>
+
+      {recientes.length > 0 ? (
+        <div className="mt-8 lg:col-span-2">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-muted uppercase">
+              <History className="size-3.5" aria-hidden="true" />
+              Recientes en este teléfono
+            </h2>
+            <span aria-hidden="true" className="text-xs text-muted">
+              {recientes.length}
+            </span>
+          </div>
+          <Riel etiqueta="Ideas recientes" pista="Desliza" className="mt-2">
+            {recientes.map((idea) => (
+              <button
+                key={idea.id}
+                type="button"
+                onClick={() => {
+                  focusIdea(idea);
+                  anunciar(`Abriendo «${idea.title}»`, "neutro");
+                }}
+                className="tarjeta tarjeta-elevable w-56 p-3.5 text-left"
+                style={vars({ "--hue": temaDe(idea.area).hue })}
+                aria-label={`Volver a abrir la idea ${idea.title}`}
+              >
+                <span className="flex items-center gap-1.5 text-[0.6875rem] tracking-wide text-muted uppercase">
+                  <span aria-hidden="true">{temaDe(idea.area).emoji}</span>
+                  {AREA_LABEL[idea.area]}
+                </span>
+                <span className="font-display mt-1.5 block truncate text-lg leading-tight text-fg">
+                  {idea.title}
+                </span>
+                <span className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+                  <Eye className="size-3" aria-hidden="true" />
+                  {saved[idea.id] ? "Guardada" : "Vista antes"}
+                </span>
+              </button>
+            ))}
+          </Riel>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function PildoraInfo({ glifo, texto }: { glifo?: string; texto: string }) {
+  return (
+    <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface/80 px-3 py-1.5 text-xs text-muted">
+      {glifo ? <span aria-hidden="true">{glifo}</span> : null}
+      {texto}
+    </span>
+  );
+}
+
+const TONO_MENSAJE = {
+  neutro: {
+    clase: "border-line bg-surface text-fg",
+    icono: <Info className="size-4 shrink-0 text-accent" aria-hidden="true" />,
+  },
+  exito: {
+    clase: "border-moss/45 bg-moss/10 text-[#e9f6dc]",
+    icono: <Check className="size-4 shrink-0 text-moss" aria-hidden="true" />,
+  },
+  aviso: {
+    clase: "border-aviso/45 bg-aviso/10 text-[#f8ecc9]",
+    icono: <Info className="size-4 shrink-0 text-aviso" aria-hidden="true" />,
+  },
+  error: {
+    clase: "border-peligro/50 bg-peligro/10 text-[#ffe6de]",
+    icono: <TriangleAlert className="size-4 shrink-0 text-peligro" aria-hidden="true" />,
+  },
+} as const;
+
+/** Región viva única del panel: aquí se anuncian los resultados de cada toque. */
+function EstadoVivo({ mensaje }: { mensaje: Mensaje | null }) {
+  return (
+    <div role="status" aria-live="polite">
+      {mensaje ? (
+        <p
+          className={cn(
+            "aviso-flotante mt-3 flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-sm leading-relaxed",
+            TONO_MENSAJE[mensaje.tono].clase,
+          )}
+        >
+          {TONO_MENSAJE[mensaje.tono].icono}
+          <span className="min-w-0">{mensaje.texto}</span>
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function FilterChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`press h-10 shrink-0 rounded-full px-4 text-sm ${active ? "bg-accent text-ink" : "bg-raised text-fg"}`}
-    >
-      {label}
-    </button>
-  );
-}
+function Bienvenida() {
+  const pasos = [
+    {
+      icono: <Hand className="size-4" aria-hidden="true" />,
+      titulo: "Pulsa",
+      texto: "Una idea distinta en cada toque, del archivo local o pensada en vivo.",
+    },
+    {
+      icono: <Compass className="size-4" aria-hidden="true" />,
+      titulo: "Explora",
+      texto: "Para quién es, qué problema cotidiano resuelve y cómo se usaría, paso a paso.",
+    },
+    {
+      icono: <Bookmark className="size-4" aria-hidden="true" />,
+      titulo: "Guarda",
+      texto: "Lo que te sirve se queda en este dispositivo, sin cuenta ni nube.",
+    },
+  ];
 
-function TabButton({
-  active,
-  onClick,
-  label,
-  icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon: ReactNode;
-}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={`press flex h-14 flex-col items-center justify-center gap-1 text-xs ${active ? "text-accent" : "text-muted"}`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function Settings({
-  useAi,
-  area,
-  focus,
-  onAi,
-  onArea,
-  onFocus,
-  onReset,
-}: {
-  useAi: boolean;
-  area: AreaFilter;
-  focus: FocusFilter;
-  onAi: () => void;
-  onArea: (area: AreaFilter) => void;
-  onFocus: (focus: FocusFilter) => void;
-  onReset: () => void;
-}) {
-  return (
-    <section className="space-y-4">
-      <Switch
-        on={useAi}
-        onToggle={onAi}
-        label="Ideas en vivo"
-        detail="Si está activo, cada toque pide una idea nueva. Si falla, usa el archivo de este teléfono. Apagado, no sale ningún dato."
-      />
-      <div className="rounded-3xl border border-line bg-surface p-4">
-        <p className="text-sm font-medium text-fg">Ámbito</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <FilterChip active={area === "cualquiera"} label="Cualquiera" onClick={() => onArea("cualquiera")} />
-          {AREAS.map((item) => (
-            <FilterChip key={item.id} active={area === item.id} label={item.label} onClick={() => onArea(item.id)} />
-          ))}
-        </div>
-      </div>
-      <div className="rounded-3xl border border-line bg-surface p-4">
-        <p className="text-sm font-medium text-fg">Enfoque</p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {(
-            [
-              ["ambos", "Ambos"],
-              ["cotidiano", "Diario"],
-              ["procesos", "Procesos"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onFocus(id)}
-              className={`press h-11 rounded-2xl text-sm ${focus === id ? "bg-accent text-ink" : "bg-raised text-fg"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onReset}
-        className="press h-12 w-full rounded-2xl border border-line text-sm text-fg"
-      >
-        Vaciar historial de vistas
-      </button>
-      <p className="text-xs leading-relaxed text-muted">
-        Las guardadas no se tocan. El historial solo evita repetir ideas que ya viste. Para instalar la app o
-        leer la política completa, usa las pestañas «Instalar» y «Privacidad».
+    <div className="tarjeta rise p-6 lg:p-7" style={vars({ "--hue": "#e08a4f" })}>
+      <p className="font-display text-3xl leading-[1.05] text-fg lg:text-[2.5rem]">
+        Una idea cada vez que pulses.
       </p>
-    </section>
+      <p className="mt-3.5 max-w-md text-sm leading-relaxed text-muted">
+        Pushidea propone aplicaciones de uso cotidiano o que aligeran un proceso. Nada de pagos,
+        transferencias ni cuentas de banco: si una idea roza esos temas, se descarta antes de
+        mostrarse.
+      </p>
+      <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+        {pasos.map((paso, indice) => (
+          <li
+            key={paso.titulo}
+            className={cn(
+              "rounded-2xl border border-line bg-surface/70 p-3.5 rise",
+              `d${indice + 1}`,
+            )}
+          >
+            <span className="flex items-center gap-2 text-accent">
+              {paso.icono}
+              <span className="text-sm font-semibold text-fg">{paso.titulo}</span>
+            </span>
+            <span className="mt-1.5 block text-xs leading-relaxed text-muted">{paso.texto}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
