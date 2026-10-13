@@ -5,5 +5,9 @@ dist
 .env
 .env.*
 *.log
-.grok
+.grok/*
+!.grok/app-env.json
+!.grok/skills
+!.grok/skills/og
+!.grok/skills/og/**
 screenshots
