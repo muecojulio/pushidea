@@ -16,8 +16,6 @@ type PushState = {
   recent: Idea[];
   current: Idea | null;
   settings: Settings;
-  hydrated: boolean;
-  setHydrated: (value: boolean) => void;
   setSettings: (patch: Partial<Settings>) => void;
   commit: (idea: Idea) => void;
   toggleSave: (idea: Idea) => void;
@@ -37,9 +35,7 @@ export const usePushidea = create<PushState>()(
       seenTitles: [],
       recent: [],
       current: null,
-      hydrated: false,
       settings: { useAi: true, area: "cualquiera", focus: "ambos" },
-      setHydrated: (hydrated) => set({ hydrated }),
       setSettings: (patch) => set({ settings: { ...get().settings, ...patch } }),
       commit: (idea) => {
         const title = norm(idea.title);

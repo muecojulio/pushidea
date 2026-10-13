@@ -142,6 +142,44 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/**
+ * Cabeceras de seguridad y caché (paridad con `vercel.json`, que es quien las
+ * aplica en producción). Sin X-Frame-Options a propósito: la vista previa y
+ * Grok incrustan la app en un iframe, y `frame-ancestors` de la CSP ya limita
+ * quién puede hacerlo. Permissions-Policy apaga cámara/micrófono/ubicación/
+ * pagos: la app no los usa (el QR se genera localmente, no se escanea).
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  "content-security-policy":
+    "default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self' https://grok.com https://*.grok.me https://*.e2b.app; script-src 'self' 'unsafe-inline' https://grok.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://covers.openlibrary.org https://upload.wikimedia.org https://avatars.githubusercontent.com; connect-src 'self' https://grok.com https://api.adviceslip.com https://api.mymemory.translated.net https://es.wikipedia.org https://openlibrary.org https://covers.openlibrary.org https://api.github.com ws: wss:; manifest-src 'self'; worker-src 'self' blob:",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+};
+
+function securityHeadersPlugin(): Plugin {
+  const apply = (middlewares: {
+    use: (fn: (req: { url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => void) => void;
+  }) => {
+    middlewares.use((req, res, next) => {
+      for (const [key, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(key, value);
+      if (/^\/(favicon\.svg|og\.jpg|__grok\/)/.test(String(req.url ?? ""))) {
+        res.setHeader("cache-control", "public, max-age=604800, stale-while-revalidate=86400");
+      }
+      next();
+    });
+  };
+  return {
+    name: "pushidea:security-headers",
+    configureServer(server) {
+      apply(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      apply(server.middlewares);
+    },
+  };
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
@@ -150,6 +188,8 @@ export default defineConfig(({ command, isPreview }) => ({
     host: "0.0.0.0",
     port: 8080,
     strictPort: true,
+    // La vista previa entra por un subdominio *.e2b.app distinto en cada sesión.
+    allowedHosts: [".e2b.app"],
   },
   preview: {
     host: "127.0.0.1",
@@ -158,6 +198,7 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   resolve: { tsconfigPaths: true },
   plugins: [
+    securityHeadersPlugin(),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
