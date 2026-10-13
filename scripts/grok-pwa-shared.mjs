@@ -249,6 +249,7 @@ export function grokExtensionsHeadTags(projectId = readGrokProjectId()) {
 }
 
 export function readOgSite(cwd = process.cwd()) {
+  if (!cwd) return {};
   try {
     const raw = readFileSync(join(cwd, OG_SITE_REL_PATH), "utf8");
     const parsed = JSON.parse(raw);
@@ -260,6 +261,7 @@ export function readOgSite(cwd = process.cwd()) {
 
 /** Public path of an on-disk share card, or "" if neither file exists. */
 export function ogCardPublicPath(cwd = process.cwd()) {
+  if (!cwd) return "";
   if (existsSync(join(cwd, "public/og.jpg"))) return "/og.jpg";
   if (existsSync(join(cwd, "public/og.png"))) return "/og.png";
   return "";
@@ -414,13 +416,17 @@ function insertBeforeHeadClose(html, snippet) {
 }
 
 export function normalizeHeadContext(ctx = {}) {
-  const cwd = ctx.cwd ?? process.cwd();
-  // Middleware passes a baked `site`. Still consult the workspace so a
-  // public/og.jpg generated after that snapshot (or missed by a wrong cwd)
-  // wins over the og.grok.me placeholder. Vercel has no public/ to read, so
-  // a correct bake is unchanged.
+  // Reading the workspace is opt-in: only callers that pass `cwd` (the Vite
+  // plugin) get site.json / public/ identity from disk. Baked-`site` callers
+  // (Nitro middleware) and bare callers must stay hermetic — resolving the
+  // caller's process.cwd() here would leak whichever workspace the process
+  // happens to run in into documents that never asked for it. Callers with a
+  // baked site can still pass `cwd` so a public/og.jpg generated after that
+  // snapshot (or missed by a wrong cwd) wins over the placeholder.
+  const workspaceCwd = typeof ctx.cwd === "string" && ctx.cwd ? ctx.cwd : null;
+  const cwd = workspaceCwd ?? "";
   const site = applyCustomCardFromFs(
-    ctx.site !== undefined ? ctx.site : snapshotOgIdentity(cwd).site,
+    ctx.site !== undefined ? ctx.site : workspaceCwd ? snapshotOgIdentity(workspaceCwd).site : {},
     cwd,
   );
   const appName = resolveOgTitle(site, ctx.appName ?? DEFAULT_APP_NAME, ctx.host ?? "");

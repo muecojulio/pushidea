@@ -278,7 +278,9 @@ function tokenIdentityKey(token: string): string {
             .digest("base64url");
         }
       }
-    } catch {}
+    } catch {
+      // Token no decodificable: se usa directamente su hash como clave.
+    }
   }
   return createHash("sha256").update(token).digest("base64url");
 }

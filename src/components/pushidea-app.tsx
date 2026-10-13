@@ -1,13 +1,15 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import { Bookmark, Check, Copy, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Bookmark, Check, Copy, QrCode, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
+import { InstalarQr } from "@/components/instalar-qr";
+import { PrivacidadContenido } from "@/components/privacidad-contenido";
+import { ConsejoDelDia, RecursosIdea } from "@/components/recursos-idea";
 import { generateIdea } from "@/lib/ideas/generate";
 import { ideaText, isBanned, norm } from "@/lib/ideas/guard";
 import { pickLocal, type AreaFilter, type FocusFilter } from "@/lib/ideas/pick";
 import { usePushidea } from "@/lib/ideas/store";
 import { AREAS, AREA_LABEL, FOCUS_LABEL, type Idea } from "@/lib/ideas/types";
 
-type Tab = "generar" | "guardadas" | "ajustes";
+type Tab = "generar" | "guardadas" | "instalar" | "privacidad" | "ajustes";
 
 function Mark() {
   return (
@@ -98,6 +100,7 @@ function IdeaBody({ idea, saved, onToggle }: { idea: Idea; saved: boolean; onTog
           </li>
         ))}
       </ol>
+      <RecursosIdea area={idea.area} />
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button
           type="button"
@@ -141,9 +144,7 @@ export function PushideaApp() {
   const [savedArea, setSavedArea] = useState<AreaFilter>("cualquiera");
 
   useEffect(() => {
-    void Promise.resolve(usePushidea.persist.rehydrate()).finally(() => {
-      usePushidea.getState().setHydrated(true);
-    });
+    void Promise.resolve(usePushidea.persist.rehydrate());
   }, []);
 
   async function onGenerate() {
@@ -351,6 +352,12 @@ export function PushideaApp() {
           </section>
         ) : null}
 
+        {tab === "generar" ? <ConsejoDelDia /> : null}
+
+        {tab === "instalar" ? <InstalarQr /> : null}
+
+        {tab === "privacidad" ? <PrivacidadContenido /> : null}
+
         {tab === "ajustes" ? (
           <Settings
             useAi={settings.useAi}
@@ -369,9 +376,11 @@ export function PushideaApp() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-bg/95 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-lg grid-cols-3 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid max-w-lg grid-cols-5 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <TabButton active={tab === "generar"} onClick={() => setTab("generar")} label="Generar" icon={<Sparkles className="size-5" />} />
           <TabButton active={tab === "guardadas"} onClick={() => setTab("guardadas")} label="Guardadas" icon={<Bookmark className="size-5" />} />
+          <TabButton active={tab === "instalar"} onClick={() => setTab("instalar")} label="Instalar" icon={<QrCode className="size-5" />} />
+          <TabButton active={tab === "privacidad"} onClick={() => setTab("privacidad")} label="Privacidad" icon={<ShieldCheck className="size-5" />} />
           <TabButton active={tab === "ajustes"} onClick={() => setTab("ajustes")} label="Ajustes" icon={<SlidersHorizontal className="size-5" />} />
         </div>
       </nav>
@@ -432,24 +441,6 @@ function Settings({
   onFocus: (focus: FocusFilter) => void;
   onReset: () => void;
 }) {
-  const [installReady, setInstallReady] = useState(false);
-  const [installed, setInstalled] = useState(false);
-  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-
-  useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
-    setInstalled(standalone);
-    const onPrompt = (event: Event) => {
-      event.preventDefault();
-      setPromptEvent(event as BeforeInstallPromptEvent);
-      setInstallReady(true);
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
-  }, []);
-
   return (
     <section className="space-y-4">
       <Switch
@@ -488,35 +479,6 @@ function Settings({
           ))}
         </div>
       </div>
-      <div className="rounded-3xl border border-line bg-surface p-4">
-        <p className="text-sm font-medium text-fg">Instalar en el teléfono</p>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          {installed
-            ? "Pushidea ya está instalada en este dispositivo."
-            : "En iPhone, usa Compartir y luego Agregar a inicio. En Android, el botón de abajo la instala si el navegador lo permite."}
-        </p>
-        {installReady && promptEvent ? (
-          <button
-            type="button"
-            className="press mt-4 h-12 w-full rounded-2xl bg-accent text-sm font-medium text-ink"
-            onClick={() => {
-              void promptEvent.prompt();
-              setPromptEvent(null);
-              setInstallReady(false);
-            }}
-          >
-            Instalar ahora
-          </button>
-        ) : null}
-        {!installed ? (
-          <a
-            href="?install=1&platform=ios"
-            className="press mt-3 flex h-12 items-center justify-center rounded-2xl border border-line text-sm font-medium text-fg"
-          >
-            Ver cómo instalar en iPhone
-          </a>
-        ) : null}
-      </div>
       <button
         type="button"
         onClick={onReset}
@@ -525,16 +487,9 @@ function Settings({
         Vaciar historial de vistas
       </button>
       <p className="text-xs leading-relaxed text-muted">
-        Las guardadas no se tocan. El historial solo evita repetir ideas que ya viste.
+        Las guardadas no se tocan. El historial solo evita repetir ideas que ya viste. Para instalar la app o
+        leer la política completa, usa las pestañas «Instalar» y «Privacidad».
       </p>
-      <Link to="/privacidad" className="inline-flex h-12 items-center text-sm text-accent">
-        Privacidad y caché
-      </Link>
     </section>
   );
 }
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};

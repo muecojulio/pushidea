@@ -8,19 +8,6 @@ type GenInput = {
   avoidTitles: string[];
 };
 
-const AREA_SET = new Set([
-  "hogar",
-  "cocina",
-  "salud",
-  "organizacion",
-  "aprendizaje",
-  "movilidad",
-  "trabajo",
-  "cuidado",
-  "comunidad",
-  "mascotas",
-]);
-
 function asInput(value: unknown): GenInput {
   const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const area = typeof raw.area === "string" && (raw.area === "cualquiera" || isArea(raw.area)) ? raw.area : "cualquiera";
@@ -48,19 +35,19 @@ function parseIdea(text: string, input: GenInput): Idea | null {
   } catch {
     return null;
   }
-  const title = typeof data.title === "string" ? data.title.replace(/\s+/g, " ").trim() : "";
-  const forWhom = typeof data.forWhom === "string" ? data.forWhom.trim() : "";
-  const problem = typeof data.problem === "string" ? data.problem.trim() : "";
-  const description = typeof data.description === "string" ? data.description.trim() : "";
+  const title = typeof data.title === "string" ? data.title.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+  const forWhom = typeof data.forWhom === "string" ? data.forWhom.trim().slice(0, 240) : "";
+  const problem = typeof data.problem === "string" ? data.problem.trim().slice(0, 240) : "";
+  const description = typeof data.description === "string" ? data.description.trim().slice(0, 1200) : "";
   const steps = Array.isArray(data.steps)
-    ? data.steps.filter((step): step is string => typeof step === "string").map((step) => step.trim()).filter(Boolean).slice(0, 5)
+    ? data.steps.filter((step): step is string => typeof step === "string").map((step) => step.trim().slice(0, 200)).filter(Boolean).slice(0, 5)
     : [];
   if (title.length < 4 || title.length > 60) return null;
   if (description.length < 80 || forWhom.length < 8 || problem.length < 8 || steps.length < 3) return null;
   const requestedArea = input.area !== "cualquiera" ? input.area : null;
   const area =
     requestedArea ??
-    (typeof data.area === "string" && AREA_SET.has(data.area) ? (data.area as Area) : "hogar");
+    (typeof data.area === "string" && isArea(data.area) ? data.area : "hogar");
   const focus: Focus =
     input.focus !== "ambos" ? input.focus : data.focus === "procesos" ? "procesos" : "cotidiano";
   const draft = { title, forWhom, problem, description, steps };
@@ -136,7 +123,7 @@ export const generateIdea = createServerFn({ method: "POST" })
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) return { ok: false, reason: "sin-ia" };
     try {
-      const idea = await ask(apiKey, data, false);
+      const idea = (await ask(apiKey, data, false)) ?? (await ask(apiKey, data, true));
       if (idea) return { ok: true, idea };
       return { ok: false, reason: "vacia" };
     } catch {
